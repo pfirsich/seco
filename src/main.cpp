@@ -272,6 +272,7 @@ std::pair<char, std::string> executeControlCommand(const std::vector<std::string
             return Result(0, it->second);
         } else if (args.at("set-var").asBool()) {
             variables[args.at("<name>").asString()] = args.at("<value>").asString();
+            return Result(0, "");
         } else if (args.at("print").asBool()) {
             std::cout << args.at("<message>").asString() << std::endl;
             return Result(0, "");
