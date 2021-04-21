@@ -13,11 +13,11 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "servercontrol.hpp"
+#include "seco.hpp"
 
 using namespace std::literals;
 
-const auto usage = R"(Server Control
+const auto usage = R"(seco test
 
 Usage:
     server-control start [--id=<id>]
