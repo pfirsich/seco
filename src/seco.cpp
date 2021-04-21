@@ -220,6 +220,7 @@ namespace {
     {
         const auto items = listDir(std::string(path), DT_SOCK);
         if (!items) {
+            std::cerr << "No servers seem to be running" << std::endl;
             return std::nullopt;
         }
         std::string id;
@@ -232,6 +233,7 @@ namespace {
                 // process exists
                 if (!id.empty()) {
                     // Return nullopt if there are multiple
+                    std::cerr << "Found multiple candidates" << std::endl;
                     return std::nullopt;
                 }
                 id = item;
@@ -267,9 +269,9 @@ std::optional<char> control(std::string_view path, std::string_view id,
     if (realId.empty()) {
         const auto guess = guessId(path);
         if (!guess) {
-            std::cerr << "Could not guess id" << std::endl;
             return std::nullopt;
         }
+        std::cout << "Connecting to server with pid " << *guess << std::endl;
         realId = *guess;
     }
     const auto sockPath = std::string(path) + '/' + std::string(realId);

@@ -29,7 +29,8 @@ Usage:
     server-control control [--id=<id>] exit
 
 Options:
-    --id=<id>       Server instance ID
+    --id=<id>       Server instance ID. May also be the server's pid.
+                    If ommited and there is only one server instance running, it will be chosen.
 )";
 
 char executeControlCommand(const std::vector<std::string>& command, seco::CommandOutput& output)
