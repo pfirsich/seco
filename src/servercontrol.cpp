@@ -80,7 +80,7 @@ sockaddr_un getAddress(const std::string& path)
 
 bool ControlListener::start()
 {
-    const auto sock = ::socket(AF_UNIX, SOCK_STREAM, 0);
+    const auto sock = ::socket(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK, 0);
     if (sock == -1) {
         std::cerr << "Could not open socket: " << errorString() << std::endl;
         return false;
@@ -113,8 +113,25 @@ bool ControlListener::start()
 
     running_.store(true);
     thread_ = std::thread { [this, sock]() {
+        pollfd fds[1];
+        ::memset(fds, 0, sizeof(fds));
+        fds[0].fd = sock;
+        fds[0].events = POLLIN;
+
         while (running_.load()) {
-            const auto fd = accept(sock, nullptr, nullptr);
+            // We are using a nonblocking accept socket and poll, because otherwise we could be
+            // stuck in ::accept forever, after we call stop().
+            const auto numFds = ::poll(fds, 1, 500);
+            if (numFds == -1) {
+                std::cerr << "Error in poll: " << errorString() << std::endl;
+                continue;
+            } else if (numFds == 0) {
+                // timeout
+                continue;
+            }
+            // num > 1. Since we are only polling 1 fd, we know it's the accept socket
+
+            const auto fd = ::accept(sock, nullptr, nullptr);
             if (fd == -1) {
                 std::cerr << "Could not accept connection: " << errorString() << std::endl;
                 continue;
@@ -258,7 +275,7 @@ std::optional<char> control(std::string_view path, std::string_view id,
     const auto sockPath = std::string(path) + '/' + std::string(realId);
     const auto addr = getAddress(sockPath);
 
-    if (::connect(sock, reinterpret_cast<const sockaddr*>(&addr), sizeof(addr)) == 1) {
+    if (::connect(sock, reinterpret_cast<const sockaddr*>(&addr), sizeof(addr)) == -1) {
         std::cerr << "Could not connect: " << errorString() << std::endl;
         return std::nullopt;
     }

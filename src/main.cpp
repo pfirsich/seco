@@ -84,9 +84,7 @@ std::atomic<bool> running { true };
 
 void signalHandler(int signal)
 {
-    std::cout << "received signal: " << signal << std::endl;
     if (signal == SIGINT) {
-        std::cout << "running = false" << std::endl;
         running.store(false);
     }
 }
@@ -113,7 +111,7 @@ int main(int argc, char** argv)
             ::sleep(1);
         }
 
-        std::cout << "stopping listener" << std::endl;
+        std::cout << "Stopping listener" << std::endl;
         controlListener.stop();
     } else if (args.at("control").asBool()) {
         const std::vector<std::string> cmd { argv + 1, argv + argc };
