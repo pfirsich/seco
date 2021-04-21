@@ -31,7 +31,6 @@ Usage:
 
 Options:
     --id=<id>       Server instance ID
-    --pid=<pid>     Server instance PID
 )";
 
 char executeControlCommand(const std::vector<std::string>& command, CommandOutput& output)
@@ -104,7 +103,7 @@ int main(int argc, char** argv)
         ::signal(SIGINT, signalHandler);
 
         // You probably want to do this in your application, because SIGPIPE will be received if the
-        // control process is being terminated while there are pending reads in the server.
+        // control process was terminated while the server is still writing.
         ::signal(SIGPIPE, SIG_IGN);
 
         while (running.load()) {
