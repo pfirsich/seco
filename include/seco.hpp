@@ -7,6 +7,7 @@
 #include <thread>
 #include <vector>
 
+namespace seco {
 class CommandOutput {
 public:
     CommandOutput(int sock);
@@ -19,7 +20,7 @@ private:
     int socket_;
 };
 
-class ControlListener {
+class Listener {
 public:
     using OutputFunc = void(std::string_view);
     using HandlerFunc = char(const std::vector<std::string>& command, CommandOutput&);
@@ -27,14 +28,14 @@ public:
     static constexpr auto maxCommandLength = 512;
 
     template <typename Func>
-    ControlListener(std::string_view path, std::string_view id, Func&& handler)
+    Listener(std::string_view path, std::string_view id, Func&& handler)
         : path_(path)
         , id_(id)
         , handler_(std::forward<Func>(handler))
     {
     }
 
-    ~ControlListener() = default;
+    ~Listener() = default;
 
     bool start();
     void stop();
@@ -50,5 +51,5 @@ private:
 };
 
 std::optional<char> control(std::string_view path, std::string_view id,
-    const std::vector<std::string>& command,
-    std::function<ControlListener::OutputFunc> outputCallback);
+    const std::vector<std::string>& command, std::function<Listener::OutputFunc> outputCallback);
+}

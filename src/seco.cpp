@@ -13,21 +13,22 @@
 #include <sys/un.h>
 #include <unistd.h>
 
+namespace seco {
 namespace {
-std::string errorString()
-{
-    const auto err = errno;
-    return std::string(strerror(err)) + " (" + std::to_string(err) + ")";
-}
-
-bool checkWrite(int fd, const void* data, size_t num)
-{
-    if (::write(fd, data, num) == -1) {
-        std::cerr << "Error writing socket: " << errorString() << std::endl;
-        return false;
+    std::string errorString()
+    {
+        const auto err = errno;
+        return std::string(strerror(err)) + " (" + std::to_string(err) + ")";
     }
-    return true;
-}
+
+    bool checkWrite(int fd, const void* data, size_t num)
+    {
+        if (::write(fd, data, num) == -1) {
+            std::cerr << "Error writing socket: " << errorString() << std::endl;
+            return false;
+        }
+        return true;
+    }
 }
 
 CommandOutput::CommandOutput(int sock)
@@ -68,17 +69,17 @@ void CommandOutput::close(char exitCode)
 }
 
 namespace {
-sockaddr_un getAddress(const std::string& path)
-{
-    sockaddr_un addr;
-    std::memset(&addr, 0, sizeof(addr));
-    addr.sun_family = AF_UNIX;
-    strncpy(addr.sun_path, path.c_str(), sizeof(addr.sun_path) - 1);
-    return addr;
-}
+    sockaddr_un getAddress(const std::string& path)
+    {
+        sockaddr_un addr;
+        std::memset(&addr, 0, sizeof(addr));
+        addr.sun_family = AF_UNIX;
+        strncpy(addr.sun_path, path.c_str(), sizeof(addr.sun_path) - 1);
+        return addr;
+    }
 }
 
-bool ControlListener::start()
+bool Listener::start()
 {
     const auto sock = ::socket(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK, 0);
     if (sock == -1) {
@@ -161,7 +162,7 @@ bool ControlListener::start()
     return true;
 }
 
-void ControlListener::stop()
+void Listener::stop()
 {
     if (!running_.load()) {
         return;
@@ -170,92 +171,91 @@ void ControlListener::stop()
     thread_.join();
 }
 
-const std::string& ControlListener::getId() const
+const std::string& Listener::getId() const
 {
     return id_;
 }
 
 namespace {
-std::optional<std::vector<std::string>> listDir(const std::string& path, unsigned char type)
-{
-    auto dir = ::opendir(path.c_str());
-    if (!dir) {
-        return std::nullopt;
-    }
-
-    std::vector<std::string> items;
-    ::dirent* entry;
-    errno = 0;
-    while ((entry = ::readdir(dir))) {
-        if (entry->d_type == type) {
-            items.emplace_back(entry->d_name);
-        }
-    }
-    if (errno) {
-        return std::nullopt;
-    }
-
-    // We ignore the closedir errors, because readdir did not fail, so we got what we wanted
-    ::closedir(dir);
-
-    return items;
-}
-
-std::optional<int> parseInteger(std::string_view str)
-{
-    try {
-        size_t pos = 0;
-        const auto num = std::stol(std::string(str), &pos);
-        if (pos != str.size()) {
+    std::optional<std::vector<std::string>> listDir(const std::string& path, unsigned char type)
+    {
+        auto dir = ::opendir(path.c_str());
+        if (!dir) {
             return std::nullopt;
         }
-        return num;
-    } catch (const std::exception& exc) {
-        return std::nullopt;
-    }
-}
 
-std::optional<std::string> guessId(std::string_view path)
-{
-    const auto items = listDir(std::string(path), DT_SOCK);
-    if (!items) {
-        return std::nullopt;
-    }
-    std::string id;
-    for (const auto& item : *items) {
-        const auto pid = parseInteger(item);
-        if (!pid) {
-            continue;
+        std::vector<std::string> items;
+        ::dirent* entry;
+        errno = 0;
+        while ((entry = ::readdir(dir))) {
+            if (entry->d_type == type) {
+                items.emplace_back(entry->d_name);
+            }
         }
-        if (::kill(*pid, 0) == 0) {
-            // process exists
-            if (!id.empty()) {
-                // Return nullopt if there are multiple
+        if (errno) {
+            return std::nullopt;
+        }
+
+        // We ignore the closedir errors, because readdir did not fail, so we got what we wanted
+        ::closedir(dir);
+
+        return items;
+    }
+
+    std::optional<int> parseInteger(std::string_view str)
+    {
+        try {
+            size_t pos = 0;
+            const auto num = std::stol(std::string(str), &pos);
+            if (pos != str.size()) {
                 return std::nullopt;
             }
-            id = item;
+            return num;
+        } catch (const std::exception& exc) {
+            return std::nullopt;
         }
     }
-    return id;
-}
 
-[[maybe_unused]] std::string toHexStream(const uint8_t* data, size_t size)
-{
-    static constexpr std::array<char, 16> hexDigits { '0', '1', '2', '3', '4', '5', '6', '7', '8',
-        '9', 'a', 'b', 'c', 'd', 'e', 'f' };
-    std::string str;
-    str.reserve(size * 2);
-    for (size_t i = 0; i < size; ++i) {
-        str.append(1, hexDigits[(data[i] & 0xf0) >> 4]);
-        str.append(1, hexDigits[(data[i] & 0x0f) >> 0]);
+    std::optional<std::string> guessId(std::string_view path)
+    {
+        const auto items = listDir(std::string(path), DT_SOCK);
+        if (!items) {
+            return std::nullopt;
+        }
+        std::string id;
+        for (const auto& item : *items) {
+            const auto pid = parseInteger(item);
+            if (!pid) {
+                continue;
+            }
+            if (::kill(*pid, 0) == 0) {
+                // process exists
+                if (!id.empty()) {
+                    // Return nullopt if there are multiple
+                    return std::nullopt;
+                }
+                id = item;
+            }
+        }
+        return id;
     }
-    return str;
-}
+
+    [[maybe_unused]] std::string toHexStream(const uint8_t* data, size_t size)
+    {
+        static constexpr std::array<char, 16> hexDigits { '0', '1', '2', '3', '4', '5', '6', '7',
+            '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
+        std::string str;
+        str.reserve(size * 2);
+        for (size_t i = 0; i < size; ++i) {
+            str.append(1, hexDigits[(data[i] & 0xf0) >> 4]);
+            str.append(1, hexDigits[(data[i] & 0x0f) >> 0]);
+        }
+        return str;
+    }
 }
 
 std::optional<char> control(std::string_view path, std::string_view id,
-    const std::vector<std::string>& command,
-    std::function<ControlListener::OutputFunc> outputCallback)
+    const std::vector<std::string>& command, std::function<Listener::OutputFunc> outputCallback)
 {
     const auto sock = ::socket(AF_UNIX, SOCK_STREAM, 0);
     if (sock == -1) {
@@ -327,4 +327,5 @@ std::optional<char> control(std::string_view path, std::string_view id,
     // We should never get here
     ::close(sock);
     return std::nullopt;
+}
 }

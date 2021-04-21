@@ -33,7 +33,7 @@ Options:
     --id=<id>       Server instance ID
 )";
 
-char executeControlCommand(const std::vector<std::string>& command, CommandOutput& output)
+char executeControlCommand(const std::vector<std::string>& command, seco::CommandOutput& output)
 {
     static std::unordered_map<std::string, std::string> variables;
     try {
@@ -94,9 +94,9 @@ int main(int argc, char** argv)
     const auto path = "/tmp/server-control";
     if (args.at("start").asBool()) {
         const auto id = args.at("--id") ? args.at("--id").asString() : "";
-        ControlListener controlListener(path, id, executeControlCommand);
-        std::cout << "pid: " << ::getpid() << ", id: " << controlListener.getId() << std::endl;
-        if (!controlListener.start()) {
+        seco::Listener secoListener(path, id, executeControlCommand);
+        std::cout << "pid: " << ::getpid() << ", id: " << secoListener.getId() << std::endl;
+        if (!secoListener.start()) {
             std::cout << "Error starting control listener" << std::endl;
         }
 
@@ -111,11 +111,12 @@ int main(int argc, char** argv)
         }
 
         std::cout << "Stopping listener" << std::endl;
-        controlListener.stop();
+        secoListener.stop();
     } else if (args.at("control").asBool()) {
         const std::vector<std::string> cmd { argv + 1, argv + argc };
         const auto id = args.at("--id") ? args.at("--id").asString() : "";
-        const auto res = control(path, id, cmd, [](std::string_view str) { std::cout << str; });
+        const auto res
+            = seco::control(path, id, cmd, [](std::string_view str) { std::cout << str; });
         if (!res) {
             std::cerr << "Error executing control command" << std::endl;
             return 1;
