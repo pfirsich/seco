@@ -3,7 +3,7 @@
 ![Example](./docs/rec.svg)
 
 seco ("server controller") is a little library to provide a way to control a server while it is running.
-See [main.cpp](main.cpp) for an example.
+See [main.cpp](src/main.cpp) for an example.
 
 The server simply creates a `seco::Listener` that starts a background thread that will listen for commands, sent from another process via `seco::control`.
 
