@@ -286,9 +286,6 @@ std::pair<char, std::string> executeControlCommand(const std::vector<std::string
 int main(int argc, char** argv)
 {
     const auto args = docopt::docopt(usage, { argv + 1, argv + argc }, true);
-    for (const auto& [k, v] : args) {
-        std::cout << k << ": " << v << std::endl;
-    }
     const auto path = "/tmp/server-control";
     if (args.at("start").asBool()) {
         ControlLister controlListener(
@@ -303,6 +300,8 @@ int main(int argc, char** argv)
         while (running.load()) {
             ::sleep(1);
         }
+
+        std::cout << "stopping listener" << std::endl;
         controlListener.stop();
     } else if (args.at("control").asBool()) {
         const std::vector<std::string> cmd { argv + 1, argv + argc };
