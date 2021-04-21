@@ -17,6 +17,7 @@ include_directories(${DOCOPT_INCLUDE_DIRS})
 
 set(SRC
     main.cpp
+    servercontrol.cpp
 )
 list(TRANSFORM SRC PREPEND src/)
 
