@@ -98,12 +98,14 @@ bool Listener::start()
         return false;
     }
 
-    const auto idPath = path_ + '/' + id_;
-    std::cout << "Symlink: " << idPath << std::endl;
-    ::unlink(idPath.c_str());
-    if (::symlink(sockPath.c_str(), idPath.c_str()) == -1) {
-        std::cerr << "Could not create symlink: " << errorString() << std::endl;
-        // don't return
+    if (!id_.empty()) {
+        const auto idPath = path_ + '/' + id_;
+        std::cout << "Symlink: " << idPath << std::endl;
+        ::unlink(idPath.c_str());
+        if (::symlink(sockPath.c_str(), idPath.c_str()) == -1) {
+            std::cerr << "Could not create symlink: " << errorString() << std::endl;
+            // don't return
+        }
     }
 
     const auto maxConnectionRequests = 2;
