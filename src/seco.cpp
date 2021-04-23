@@ -92,7 +92,7 @@ bool Listener::start()
     const auto addr = getAddress(sockPath);
 
     ::unlink(sockPath.c_str());
-    ::mkdir(path_.c_str(), 0600);
+    ::mkdir(path_.c_str(), 0700);
     if (::bind(sock, reinterpret_cast<const sockaddr*>(&addr), sizeof(addr)) == -1) {
         std::cerr << "Could not bind '" << sockPath << "': " << errorString() << std::endl;
         return false;
