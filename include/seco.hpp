@@ -2,6 +2,7 @@
 
 #include <atomic>
 #include <functional>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <thread>
